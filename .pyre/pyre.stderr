@@ -1,0 +1,22 @@
+2019-07-28 21:01:58,989 INFO No binary specified, looking for `pyre.bin` in PATH
+2019-07-28 21:01:58,989 INFO Found: `/usr/bin/pyre.bin`
+2019-07-28 21:01:58,989 INFO No typeshed specified, looking for it
+2019-07-28 21:01:58,990 DEBUG Trying with: `/usr/lib/python3.7/site-packages/pyre_check/pyre_check/typeshed/`
+2019-07-28 21:01:58,990 DEBUG Trying with: `/usr/lib/python3.7/site-packages/pyre_check/typeshed/`
+2019-07-28 21:01:58,990 DEBUG Trying with: `/usr/lib/python3.7/pyre_check/typeshed/`
+2019-07-28 21:01:58,990 DEBUG Trying with: `/usr/lib/pyre_check/typeshed/`
+2019-07-28 21:01:58,990 INFO Found: `/usr/lib/pyre_check/typeshed/`
+2019-07-28 21:01:58,993 INFO Constructing shared directory `/home/adrian/Documents/projects/funke/.pyre/shared_analysis_directory_8641`
+2019-07-28 21:01:58,993 ERROR No targets or source directories to analyze.
+
+2019-07-28 21:02:24,794 INFO No binary specified, looking for `pyre.bin` in PATH
+2019-07-28 21:02:24,795 INFO Found: `/usr/bin/pyre.bin`
+2019-07-28 21:02:24,795 INFO No typeshed specified, looking for it
+2019-07-28 21:02:24,795 DEBUG Trying with: `/usr/lib/python3.7/site-packages/pyre_check/pyre_check/typeshed/`
+2019-07-28 21:02:24,795 DEBUG Trying with: `/usr/lib/python3.7/site-packages/pyre_check/typeshed/`
+2019-07-28 21:02:24,796 DEBUG Trying with: `/usr/lib/python3.7/pyre_check/typeshed/`
+2019-07-28 21:02:24,796 DEBUG Trying with: `/usr/lib/pyre_check/typeshed/`
+2019-07-28 21:02:24,796 INFO Found: `/usr/lib/pyre_check/typeshed/`
+2019-07-28 21:02:24,800 INFO Constructing shared directory `/home/adrian/Documents/projects/funke/.pyre/shared_analysis_directory_8689`
+2019-07-28 21:02:24,800 ERROR No targets or source directories to analyze.
+
