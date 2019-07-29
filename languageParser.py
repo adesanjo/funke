@@ -4,8 +4,8 @@ from languageLexer import Position, Token
 
 class Node:
     def __init__(self, startPos: Optional[Position] = None, endPos: Optional[Position] = None):
-        self.startPos = startPos
-        self.endPos = endPos
+        self.startPos: Optional[Position] = startPos
+        self.endPos: Optional[Position] = endPos
 
 class NopNode(Node):
     def __init__(self, startPos: Optional[Position] = None, endPos: Optional[Position] = None):
