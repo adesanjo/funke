@@ -1,0 +1,22 @@
+program:        (assign)* basicExpr
+
+assign:         IDENTIFIER (LPAREN (IDENTIFIER (COMMA IDENTIFIER)*)? RPAREN)? EQUAL exprs
+
+exprs:          expr (COMMA expr)*
+
+expr:           IDENTIFIER EQUAL basicExpr
+                basicExpr
+
+basicExpr:      INT|FLOAT|STRING|POUND
+                DOLLAR LPAREN basicExpr RPAREN
+                PLUS LPAREN basicExpr COMMA basicExpr RPAREN
+                MINUS LPAREN basicExpr COMMA basicExpr RPAREN
+                MUL LPAREN basicExpr COMMA basicExpr RPAREN
+                DIV LPAREN basicExpr COMMA basicExpr RPAREN
+                MOD LPAREN basicExpr COMMA basicExpr RPAREN
+                AT LPAREN basicExpr COMMA basicExpr RPAREN
+                EQUAL LPAREN basicExpr COMMA basicExpr COMMA exprs RPAREN
+                LESSTHAN LPAREN basicExpr COMMA basicExpr COMMA exprs RPAREN
+                GREATERTHAN LPAREN basicExpr COMMA basicExpr COMMA exprs RPAREN
+                NOTEQUAL LPAREN basicExpr COMMA basicExpr COMMA exprs RPAREN
+                IDENTIFIER (LPAREN (basicExpr (COMMA basicExpr)*)? RPAREN)?

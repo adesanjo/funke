@@ -6,11 +6,17 @@ from languageInterpreter import Interpreter
 from values import Value
 from error import Error
 
-def run(filename: str, code: str) -> Tuple[Optional[Value], Optional[Error]]:
-    lexer = Lexer(filename, code)
-    tokens = lexer.makeTokens()
+def run(code: str) -> Tuple[Optional[Value], Optional[Error]]:
+    lexer = Lexer(code)
+    tokens, err = lexer.makeTokens()
+    if err:
+        return None, err
+    print(tokens)
     parser = Parser(tokens)
-    ast = parser.parseTokens()
+    ast, err = parser.parseTokens()
+    if err:
+        return None, err
+    print(ast)
     interpreter = Interpreter(ast)
     res, err = interpreter.interpret()
     return res, err

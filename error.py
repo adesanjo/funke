@@ -1,5 +1,4 @@
 from __future__ import annotations
-
 from typing import Optional
 
 class Position:
@@ -66,3 +65,7 @@ class Error:
 class IllegalCharacterError(Error):
     def __init__(self, charPos: Position, char: str):
         super().__init__(charPos.copy(), charPos.advance(), "IllegalCharacterError", char)
+
+class InvalidSyntaxError(Error):
+    def __init__(self, startPos: Position, endPos: Position, msg: str):
+        super().__init__(startPos, endPos, "InvalidSyntaxError", msg)

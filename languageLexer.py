@@ -63,10 +63,37 @@ class Lexer:
                 tokens.append(Token(TT_COMMA, None, self.pos))
                 self.advance()
             elif self.char == "+":
-                tokens.append(Token(TT_COMMA, None, self.pos))
+                tokens.append(Token(TT_PLUS, None, self.pos))
                 self.advance()
             elif self.char == "-":
-                tokens.append(Token(TT_COMMA, None, self.pos))
+                tokens.append(Token(TT_MINUS, None, self.pos))
+                self.advance()
+            elif self.char == "*":
+                tokens.append(Token(TT_MUL, None, self.pos))
+                self.advance()
+            elif self.char == "/":
+                tokens.append(Token(TT_DIV, None, self.pos))
+                self.advance()
+            elif self.char == "%":
+                tokens.append(Token(TT_MOD, None, self.pos))
+                self.advance()
+            elif self.char == "<":
+                tokens.append(Token(TT_LESSTHAN, None, self.pos))
+                self.advance()
+            elif self.char == ">":
+                tokens.append(Token(TT_GREATERTHAN, None, self.pos))
+                self.advance()
+            elif self.char == "!":
+                tokens.append(Token(TT_NOTEQUAL, None, self.pos))
+                self.advance()
+            elif self.char == "$":
+                tokens.append(Token(TT_DOLLAR, None, self.pos))
+                self.advance()
+            elif self.char == "#":
+                tokens.append(Token(TT_POUND, None, self.pos))
+                self.advance()
+            elif self.char == "@":
+                tokens.append(Token(TT_AT, None, self.pos))
                 self.advance()
             else:
                 return [], IllegalCharacterError(self.pos, f"'{self.char}'")
