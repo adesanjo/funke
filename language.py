@@ -4,22 +4,31 @@ from languageLexer import Lexer
 from languageParser import Parser
 from languageInterpreter import Interpreter
 from values import Value
-from error import Error
+from error import Error, RTError
 
 from pprint import pprint
+
+DEBUG = True
 
 def run(code: str) -> Tuple[Optional[Value], Optional[Error]]:
     lexer = Lexer(code)
     tokens, err = lexer.makeTokens()
     if err:
         return None, err
-    print(tokens)
-    print()
+    if DEBUG:
+        print("Tokens:")
+        print(tokens)
+        print()
     parser = Parser(tokens)
     ast, err = parser.parseTokens()
     if err:
         return None, err
-    print(ast)
+    if DEBUG:
+        print("AST:")
+        print(ast)
+        print()
     interpreter = Interpreter(ast)
     res, err = interpreter.interpret()
-    return res, err
+    if err:
+        return None, err
+    return res, None

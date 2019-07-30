@@ -1,9 +1,11 @@
 from __future__ import annotations
 from typing import Tuple, Optional, NoReturn, Dict
 
+import random
+
 from languageParser import Node, ProgramNode, AssignNode, VarAssignNode, VarAccessNode, IntNode, FloatNode, StringNode, InputNode, PrintNode, PlusNode, MinusNode, MulNode, DivNode, ModNode, EqualNode, LessThanNode, GreaterThanNode, NotEqualNode, CallNode, RandNode
-from values import Value, IntValue, FloatValue, StringValue
-from error import Error
+from values import Value, IntValue, FloatValue, StringValue, FunctionValue
+from error import Error, RTError
 
 RuntimeResult = Tuple[Optional[Value], Optional[Error]]
 
@@ -24,12 +26,20 @@ class Context:
     
     def setVar(self, varName: str, value: Value):
         self.symbolTable[varName] = value
+    
+    def __repr__(self) -> str:
+        res = f"{self.symbolTable}"
+        if self.parent:
+            res += "\n" + str(self.parent)
+        return res
 
 class Interpreter:
-    def __init__(self, ast: Node):
+    def __init__(self, ast: Optional[Node] = None):
         self.ast = ast
     
     def interpret(self) -> RuntimeResult:
+        if not self.ast:
+            return None, RTError(None, None, "No AST generated")
         return self.visit(self.ast, Context())
     
     def visit(self, node: Node, context: Context) -> RuntimeResult:
@@ -47,13 +57,22 @@ class Interpreter:
         return res, err
     
     def visitAssignNode(self, node: AssignNode, context: Context) -> RuntimeResult:
-        return None, None
+        f = FunctionValue(node.exprNodes, node.params, node.startPos, node.endPos)
+        context.setVar(node.funcName, f)
+        return f, None
     
     def visitVarAssignNode(self, node: VarAssignNode, context: Context) -> RuntimeResult:
-        return None, None
+        varName = node.varName
+        value, err = self.visit(node.value, context)
+        if value:
+            context.setVar(varName, value)
+        return value, err
     
     def visitVarAccessNode(self, node: VarAccessNode, context: Context) -> RuntimeResult:
-        return None, None
+        value = context.getVar(node.varName)
+        if value:
+            return value, None
+        return None, RTError(node.startPos, node.endPos, f"Name '{node.varName}' is not defined")
     
     def visitIntNode(self, node: IntNode, context: Context) -> RuntimeResult:
         return IntValue(node.value, node.startPos, node.endPos), None
@@ -65,40 +84,153 @@ class Interpreter:
         return StringValue(node.value, node.startPos, node.endPos), None
     
     def visitInputNode(self, node: InputNode, context: Context) -> RuntimeResult:
-        return None, None
+        val = input("> ")
+        if val.isdigit():
+            return IntValue(int(val), node.startPos, node.endPos), None
+        if val.replace(".", "", 1).isdigit():
+            return FloatValue(float(val), node.startPos, node.endPos), None
+        return StringValue(val, node.startPos, node.endPos), None
     
     def visitPrintNode(self, node: PrintNode, context: Context) -> RuntimeResult:
-        return None, None
+        res, err = self.visit(node.node, context)
+        if err:
+            return None, err
+        print(res)
+        return res, err
     
     def visitPlusNode(self, node: PlusNode, context: Context) -> RuntimeResult:
-        return None, None
+        left, err = self.visit(node.leftNode, context)
+        if err:
+            return None, err
+        right, err = self.visit(node.rightNode, context)
+        if err:
+            return None, err
+        assert(left is not None and right is not None)
+        res, err = left.add(right)
+        return res, err
     
     def visitMinusNode(self, node: MinusNode, context: Context) -> RuntimeResult:
-        return None, None
+        left, err = self.visit(node.leftNode, context)
+        if err:
+            return None, err
+        right, err = self.visit(node.rightNode, context)
+        if err:
+            return None, err
+        assert(left is not None and right is not None)
+        res, err = left.sub(right)
+        return res, err
     
     def visitMulNode(self, node: MulNode, context: Context) -> RuntimeResult:
-        return None, None
+        left, err = self.visit(node.leftNode, context)
+        if err:
+            return None, err
+        right, err = self.visit(node.rightNode, context)
+        if err:
+            return None, err
+        assert(left is not None and right is not None)
+        res, err = left.mul(right)
+        return res, err
     
     def visitDivNode(self, node: DivNode, context: Context) -> RuntimeResult:
-        return None, None
+        left, err = self.visit(node.leftNode, context)
+        if err:
+            return None, err
+        right, err = self.visit(node.rightNode, context)
+        if err:
+            return None, err
+        assert(left is not None and right is not None)
+        res, err = left.div(right)
+        return res, err
     
     def visitModNode(self, node: ModNode, context: Context) -> RuntimeResult:
-        return None, None
+        left, err = self.visit(node.leftNode, context)
+        if err:
+            return None, err
+        right, err = self.visit(node.rightNode, context)
+        if err:
+            return None, err
+        assert(left is not None and right is not None)
+        res, err = left.mod(right)
+        return res, err
     
     def visitEqualNode(self, node: EqualNode, context: Context) -> RuntimeResult:
-        return None, None
+        left, err = self.visit(node.leftNode, context)
+        if err:
+            return None, err
+        right, err = self.visit(node.rightNode, context)
+        if err:
+            return None, err
+        assert(left is not None and right is not None)
+        res = None
+        if left.eq(right):
+            for inst in node.exprNodes:
+                res, err = self.visit(inst, context)
+        return res, None
     
     def visitLessThanNode(self, node: LessThanNode, context: Context) -> RuntimeResult:
-        return None, None
+        left, err = self.visit(node.leftNode, context)
+        if err:
+            return None, err
+        right, err = self.visit(node.rightNode, context)
+        if err:
+            return None, err
+        assert(left is not None and right is not None)
+        res = None
+        if left.lt(right):
+            for inst in node.exprNodes:
+                res, err = self.visit(inst, context)
+        return res, None
     
     def visitGreaterThanNode(self, node: GreaterThanNode, context: Context) -> RuntimeResult:
-        return None, None
+        left, err = self.visit(node.leftNode, context)
+        if err:
+            return None, err
+        right, err = self.visit(node.rightNode, context)
+        if err:
+            return None, err
+        assert(left is not None and right is not None)
+        res = None
+        if left.gt(right):
+            for inst in node.exprNodes:
+                res, err = self.visit(inst, context)
+        return res, None
     
     def visitNotEqualNode(self, node: NotEqualNode, context: Context) -> RuntimeResult:
-        return None, None
+        left, err = self.visit(node.leftNode, context)
+        if err:
+            return None, err
+        right, err = self.visit(node.rightNode, context)
+        if err:
+            return None, err
+        assert(left is not None and right is not None)
+        res = None
+        if left.ne(right):
+            for inst in node.exprNodes:
+                res, err = self.visit(inst, context)
+        return res, None
     
     def visitCallNode(self, node: CallNode, context: Context) -> RuntimeResult:
-        return None, None
+        res, err = None, None
+        func = context.getVar(node.funcName)
+        if not func:
+            return None, RTError(node.startPos, node.endPos, f"Function {node.funcName} is not defined")
+        params = []
+        for param in node.params:
+            value, err = self.visit(param, context)
+            if err:
+                return None, err
+            params.append(value)
+        res, err = func.call(params, context)
+        if err:
+            return None, err
+        return res, None
     
     def visitRandNode(self, node: RandNode, context: Context) -> RuntimeResult:
-        return None, None
+        fromVal, err = self.visit(node.fromNode, context)
+        if err:
+            return None, err
+        toVal, err = self.visit(node.toNode, context)
+        if err:
+            return None, err
+        assert(isinstance(fromVal.value, int) and isinstance(toVal.value, int))
+        return IntValue(random.randint(fromVal.value, toVal.value), node.startPos, node.endPos), None

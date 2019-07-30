@@ -6,9 +6,9 @@ from languageLexer import Position, Token
 from error import Error, InvalidSyntaxError
 
 class Node:
-    def __init__(self, startPos: Optional[Position] = None, endPos: Optional[Position] = None):
-        self.startPos: Optional[Position] = startPos
-        self.endPos: Optional[Position] = endPos
+    def __init__(self, startPos: Position, endPos: Position):
+        self.startPos: Position = startPos
+        self.endPos: Position = endPos
     
     def __repr__(self) -> str:
         return "Node"
@@ -191,6 +191,8 @@ class RandNode(Node):
     def __repr__(self) -> str:
         return f"RandNode [{str(self.fromNode)}, {str(self.toNode)}]"
 
+ParseResult = Tuple[Optional[Node], Optional[Error]]
+
 class Parser:
     def __init__(self, tokens: List[Token]):
         self.tokens: List[Token] = tokens
@@ -210,10 +212,10 @@ class Parser:
         else:
             self.nextToken = None
     
-    def parseTokens(self) -> Tuple[Node, Optional[Error]]:
+    def parseTokens(self) -> ParseResult:
         return self.makeProgram()
     
-    def makeProgram(self) -> Tuple[Node, Optional[Error]]:
+    def makeProgram(self) -> ParseResult:
         nodes = []
         startPos = self.token.startPos
         while self.isAssignNext():
@@ -221,7 +223,7 @@ class Parser:
             nodes.append(assign)
         basicExpr, err = self.makeBasicExpr()
         if err:
-            return Node(), err
+            return None, err
         nodes.append(basicExpr)
         endPos = basicExpr.endPos
         assert(endPos is not None)
@@ -233,16 +235,16 @@ class Parser:
                 return True
         return False
     
-    def makeAssign(self) -> Tuple[Node, Optional[Error]]:
+    def makeAssign(self) -> ParseResult:
         startPos = self.token.startPos
         if self.token.type != TT_IDENTIFIER:
-            return Node(), InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected Identifier. Error id: 0")
+            return None, InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected Identifier. Error id: 0")
         funcName = self.token.value
         assert(isinstance(funcName, str))
         self.advance()
         
         if self.token.type != TT_LPAREN:
-            return Node(), InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected '('. Error id: 1")
+            return None, InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected '('. Error id: 1")
         self.advance()
         
         params = []
@@ -252,20 +254,20 @@ class Parser:
             while self.token.type == TT_COMMA:
                 self.advance()
                 if self.token.type != TT_IDENTIFIER:
-                    return Node(), InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected identifier. Error id: 2")
+                    return None, InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected identifier. Error id: 2")
                 params.append(self.token.value)
                 self.advance()
         if self.token.type != TT_RPAREN:
-            return Node(), InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected ')'. Error id: 3")
+            return None, InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected ')'. Error id: 3")
         self.advance()
         
         if self.token.type != TT_EQUAL:
-            return Node(), Error(self.token.startPos, self.token.endPos, "NotAssign", "Expected '='. Error id: 4")
+            return None, Error(self.token.startPos, self.token.endPos, "NotAssign", "Expected '='. Error id: 4")
         self.advance()
         
         exprNodes, err = self.makeExprs()
         if err:
-            return Node(), err
+            return None, err
         endPos = exprNodes[-1].endPos
         assert(endPos is not None)
         return AssignNode(startPos, endPos, funcName, params, exprNodes), None
@@ -283,7 +285,7 @@ class Parser:
         exprs.append(expr)
         return exprs, None
     
-    def makeExpr(self) -> Tuple[Node, Optional[Error]]:
+    def makeExpr(self) -> ParseResult:
         if self.token.type == TT_IDENTIFIER and self.nextToken.type == TT_EQUAL:
             startPos = self.token.startPos
             varName = self.token.value
@@ -292,18 +294,19 @@ class Parser:
             self.advance()
             basicExpr, err = self.makeBasicExpr()
             if err:
-                return Node(), err
+                return None, err
             endPos = basicExpr.endPos
             assert(endPos is not None)
+            assert(basicExpr is not None)
             return VarAssignNode(startPos, endPos, varName, basicExpr), None
         basicExpr, err = self.makeBasicExpr()
         if err:
-            return Node(), err
+            return None, err
         return basicExpr, None
     
-    def makeBasicExpr(self) -> Tuple[Node, Optional[Error]]:
+    def makeBasicExpr(self) -> ParseResult:
         if self.token.type == TT_EOF:
-            return Node(), InvalidSyntaxError(self.token.startPos, self.token.endPos, "Unexpected EOF. Error id: 5")
+            return None, InvalidSyntaxError(self.token.startPos, self.token.endPos, "Unexpected EOF. Error id: 5")
         if self.token.type == TT_INT:
             startPos = self.token.startPos
             endPos = self.token.endPos
@@ -334,219 +337,240 @@ class Parser:
             startPos = self.token.startPos
             self.advance()
             if self.token.type != TT_LPAREN:
-                return Node(), InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected '('. Error id: 6")
+                return None, InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected '('. Error id: 6")
             self.advance()
             basicExpr, err = self.makeBasicExpr()
             if err:
-                return Node(), err
+                return None, err
             if self.token.type != TT_RPAREN:
-                return Node(), InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected ')'. Error id: 7")
+                return None, InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected ')'. Error id: 7")
             endPos = self.token.endPos
             self.advance()
+            assert(basicExpr is not None)
             return PrintNode(startPos, endPos, basicExpr), None
         if self.token.type == TT_PLUS:
             startPos = self.token.startPos
             self.advance()
             if self.token.type != TT_LPAREN:
-                return Node(), InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected '('. Error id: 8")
+                return None, InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected '('. Error id: 8")
             self.advance()
             leftNode, err = self.makeBasicExpr()
             if err:
-                return Node(), err
+                return None, err
             if self.token.type != TT_COMMA:
-                return Node(), InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected ','. Error id: 9")
+                return None, InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected ','. Error id: 9")
             self.advance()
             rightNode, err = self.makeBasicExpr()
             if self.token.type != TT_RPAREN:
-                return Node(), InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected ')'. Error id: 10")
+                return None, InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected ')'. Error id: 10")
             endPos = self.token.endPos
             self.advance()
+            assert(leftNode is not None)
+            assert(rightNode is not None)
             return PlusNode(startPos, endPos, leftNode, rightNode), None
         if self.token.type == TT_MINUS:
             startPos = self.token.startPos
             self.advance()
             if self.token.type != TT_LPAREN:
-                return Node(), InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected '('. Error id: 11")
+                return None, InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected '('. Error id: 11")
             self.advance()
             leftNode, err = self.makeBasicExpr()
             if err:
-                return Node(), err
+                return None, err
             if self.token.type != TT_COMMA:
-                return Node(), InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected ','. Error id: 12")
+                return None, InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected ','. Error id: 12")
             self.advance()
             rightNode, err = self.makeBasicExpr()
             if self.token.type != TT_RPAREN:
-                return Node(), InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected ')'. Error id: 13")
+                return None, InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected ')'. Error id: 13")
             endPos = self.token.endPos
             self.advance()
+            assert(leftNode is not None)
+            assert(rightNode is not None)
             return MinusNode(startPos, endPos, leftNode, rightNode), None
         if self.token.type == TT_MUL:
             startPos = self.token.startPos
             self.advance()
             if self.token.type != TT_LPAREN:
-                return Node(), InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected '('. Error id: 14")
+                return None, InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected '('. Error id: 14")
             self.advance()
             leftNode, err = self.makeBasicExpr()
             if err:
-                return Node(), err
+                return None, err
             if self.token.type != TT_COMMA:
-                return Node(), InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected ','. Error id: 15")
+                return None, InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected ','. Error id: 15")
             self.advance()
             rightNode, err = self.makeBasicExpr()
             if self.token.type != TT_RPAREN:
-                return Node(), InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected ')'. Error id: 16")
+                return None, InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected ')'. Error id: 16")
             endPos = self.token.endPos
             self.advance()
+            assert(leftNode is not None)
+            assert(rightNode is not None)
             return MulNode(startPos, endPos, leftNode, rightNode), None
         if self.token.type == TT_DIV:
             startPos = self.token.startPos
             self.advance()
             if self.token.type != TT_LPAREN:
-                return Node(), InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected '('. Error id: 17")
+                return None, InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected '('. Error id: 17")
             self.advance()
             leftNode, err = self.makeBasicExpr()
             if err:
-                return Node(), err
+                return None, err
             if self.token.type != TT_COMMA:
-                return Node(), InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected ','. Error id: 18")
+                return None, InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected ','. Error id: 18")
             self.advance()
             rightNode, err = self.makeBasicExpr()
             if self.token.type != TT_RPAREN:
-                return Node(), InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected ')'. Error id: 19")
+                return None, InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected ')'. Error id: 19")
             endPos = self.token.endPos
             self.advance()
+            assert(leftNode is not None)
+            assert(rightNode is not None)
             return DivNode(startPos, endPos, leftNode, rightNode), None
         if self.token.type == TT_MOD:
             startPos = self.token.startPos
             self.advance()
             if self.token.type != TT_LPAREN:
-                return Node(), InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected '('. Error id: 20")
+                return None, InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected '('. Error id: 20")
             self.advance()
             leftNode, err = self.makeBasicExpr()
             if err:
-                return Node(), err
+                return None, err
             if self.token.type != TT_COMMA:
-                return Node(), InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected ','. Error id: 21")
+                return None, InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected ','. Error id: 21")
             self.advance()
             rightNode, err = self.makeBasicExpr()
             if self.token.type != TT_RPAREN:
-                return Node(), InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected ')'. Error id: 22")
+                return None, InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected ')'. Error id: 22")
             endPos = self.token.endPos
             self.advance()
+            assert(leftNode is not None)
+            assert(rightNode is not None)
             return ModNode(startPos, endPos, leftNode, rightNode), None
         if self.token.type == TT_AT:
             startPos = self.token.startPos
             self.advance()
             if self.token.type != TT_LPAREN:
-                return Node(), InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected '('. Error id: 23")
+                return None, InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected '('. Error id: 23")
             self.advance()
             fromNode, err = self.makeBasicExpr()
             if err:
-                return Node(), err
+                return None, err
             if self.token.type != TT_COMMA:
-                return Node(), InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected ','. Error id: 24")
+                return None, InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected ','. Error id: 24")
             self.advance()
             toNode, err = self.makeBasicExpr()
             if self.token.type != TT_RPAREN:
-                return Node(), InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected ')'. Error id: 25")
+                return None, InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected ')'. Error id: 25")
             endPos = self.token.endPos
             self.advance()
+            assert(fromNode is not None)
+            assert(toNode is not None)
             return RandNode(startPos, endPos, fromNode, toNode), None
         if self.token.type == TT_EQUAL:
             startPos = self.token.startPos
             self.advance()
             if self.token.type != TT_LPAREN:
-                return Node(), InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected '('. Error id: 26")
+                return None, InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected '('. Error id: 26")
             self.advance()
             leftNode, err = self.makeBasicExpr()
             if err:
-                return Node(), err
+                return None, err
             if self.token.type != TT_COMMA:
-                return Node(), InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected ','. Error id: 27")
+                return None, InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected ','. Error id: 27")
             self.advance()
             rightNode, err = self.makeBasicExpr()
             if self.token.type != TT_COMMA:
-                return Node(), InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected ','. Error id: 28")
+                return None, InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected ','. Error id: 28")
             self.advance()
             exprNodes, err = self.makeExprs()
             if err:
-                return Node(), err
+                return None, err
             if self.token.type != TT_RPAREN:
-                return Node(), InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected ')'. Error id: 29")
+                return None, InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected ')'. Error id: 29")
             endPos = self.token.endPos
             self.advance()
+            assert(leftNode is not None)
+            assert(rightNode is not None)
             return EqualNode(startPos, endPos, leftNode, rightNode, exprNodes), None
         if self.token.type == TT_LESSTHAN:
             startPos = self.token.startPos
             self.advance()
             if self.token.type != TT_LPAREN:
-                return Node(), InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected '('. Error id: 30")
+                return None, InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected '('. Error id: 30")
             self.advance()
             leftNode, err = self.makeBasicExpr()
             if err:
-                return Node(), err
+                return None, err
             if self.token.type != TT_COMMA:
-                return Node(), InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected ','. Error id: 31")
+                return None, InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected ','. Error id: 31")
             self.advance()
             rightNode, err = self.makeBasicExpr()
             if self.token.type != TT_COMMA:
-                return Node(), InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected ','. Error id: 32")
+                return None, InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected ','. Error id: 32")
             self.advance()
             exprNodes, err = self.makeExprs()
             if err:
-                return Node(), err
+                return None, err
             if self.token.type != TT_RPAREN:
-                return Node(), InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected ')'. Error id: 33")
+                return None, InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected ')'. Error id: 33")
             endPos = self.token.endPos
             self.advance()
+            assert(leftNode is not None)
+            assert(rightNode is not None)
             return LessThanNode(startPos, endPos, leftNode, rightNode, exprNodes), None
         if self.token.type == TT_GREATERTHAN:
             startPos = self.token.startPos
             self.advance()
             if self.token.type != TT_LPAREN:
-                return Node(), InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected '('. Error id: 34")
+                return None, InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected '('. Error id: 34")
             self.advance()
             leftNode, err = self.makeBasicExpr()
             if err:
-                return Node(), err
+                return None, err
             if self.token.type != TT_COMMA:
-                return Node(), InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected ','. Error id: 35")
+                return None, InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected ','. Error id: 35")
             self.advance()
             rightNode, err = self.makeBasicExpr()
             if self.token.type != TT_COMMA:
-                return Node(), InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected ','. Error id: 36")
+                return None, InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected ','. Error id: 36")
             self.advance()
             exprNodes, err = self.makeExprs()
             if err:
-                return Node(), err
+                return None, err
             if self.token.type != TT_RPAREN:
-                return Node(), InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected ')'. Error id: 37")
+                return None, InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected ')'. Error id: 37")
             endPos = self.token.endPos
             self.advance()
+            assert(leftNode is not None)
+            assert(rightNode is not None)
             return GreaterThanNode(startPos, endPos, leftNode, rightNode, exprNodes), None
         if self.token.type == TT_NOTEQUAL:
             startPos = self.token.startPos
             self.advance()
             if self.token.type != TT_LPAREN:
-                return Node(), InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected '('. Error id: 38")
+                return None, InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected '('. Error id: 38")
             self.advance()
             leftNode, err = self.makeBasicExpr()
             if err:
-                return Node(), err
+                return None, err
             if self.token.type != TT_COMMA:
-                return Node(), InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected ','. Error id: 39")
+                return None, InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected ','. Error id: 39")
             self.advance()
             rightNode, err = self.makeBasicExpr()
             if self.token.type != TT_COMMA:
-                return Node(), InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected ','. Error id: 40")
+                return None, InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected ','. Error id: 40")
             self.advance()
             exprNodes, err = self.makeExprs()
             if err:
-                return Node(), err
+                return None, err
             if self.token.type != TT_RPAREN:
-                return Node(), InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected ')'. Error id: 41")
+                return None, InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected ')'. Error id: 41")
             endPos = self.token.endPos
             self.advance()
+            assert(leftNode is not None)
+            assert(rightNode is not None)
             return NotEqualNode(startPos, endPos, leftNode, rightNode, exprNodes), None
         if self.token.type == TT_IDENTIFIER:
             varName = self.token.value
@@ -560,18 +584,18 @@ class Parser:
                 if self.token.type != TT_RPAREN:
                     basicExpr, err = self.makeBasicExpr()
                     if err:
-                        return Node(), err
+                        return None, err
                     params.append(basicExpr)
                     while self.token.type == TT_COMMA:
                         self.advance()
                         basicExpr, err = self.makeBasicExpr()
                         if err:
-                            return Node(), err
+                            return None, err
                         params.append(basicExpr)
                 if self.token.type != TT_RPAREN:
-                    return Node(), InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected ')'. Error id: 42")
+                    return None, InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected ')'. Error id: 42")
                 endPos = self.token.endPos
                 self.advance()
                 return CallNode(startPos, endPos, varName, params), None
             return VarAccessNode(startPos, endPos, varName), None
-        return Node(), InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected valid basic expression. Error id: 43")
+        return None, InvalidSyntaxError(self.token.startPos, self.token.endPos, "Expected valid basic expression. Error id: 43")

@@ -20,9 +20,15 @@ class Position:
         return Position(self.idx, self.line, self.column, self.code)
 
 class Error:
-    def __init__(self, startPos: Position, endPos: Position, _type: str, msg: str):
-        self.startPos: Position = startPos
-        self.endPos: Position = endPos
+    def __init__(self, startPos: Optional[Position], endPos: Optional[Position], _type: str, msg: str):
+        if startPos:
+            self.startPos: Position = startPos
+        else:
+            self.startPos: Position = Position(0, 0, 0, "")
+        if endPos:
+            self.endPos: Position = endPos
+        else:
+            self.endPos: Position = Position(0, 0, 0, "")
         self.type: str = _type
         self.msg: str = msg
     
@@ -69,3 +75,7 @@ class IllegalCharacterError(Error):
 class InvalidSyntaxError(Error):
     def __init__(self, startPos: Position, endPos: Position, msg: str):
         super().__init__(startPos, endPos, "InvalidSyntaxError", msg)
+
+class RTError(Error):
+    def __init__(self, startPos: Optional[Position], endPos: Optional[Position], msg: str):
+        super().__init__(startPos, endPos, "RTError", msg)
