@@ -216,20 +216,22 @@ class Parser:
     def makeProgram(self) -> Tuple[Node, Optional[Error]]:
         nodes = []
         startPos = self.token.startPos
-        idx = self.idx
-        assign, err = self.makeAssign()
-        while not err:
-            nodes.append(assign)
-            idx = self.idx
+        while self.isAssignNext():
             assign, err = self.makeAssign()
-        self.idx = idx - 1
-        self.advance()
+            nodes.append(assign)
         basicExpr, err = self.makeBasicExpr()
         if err:
             return Node(), err
         nodes.append(basicExpr)
-        endPos = self.token.endPos
+        endPos = basicExpr.endPos
+        assert(endPos is not None)
         return ProgramNode(startPos, endPos, nodes), None
+    
+    def isAssignNext(self) -> bool:
+        for i in range(self.idx, len(self.tokens) - 1):
+            if self.tokens[i].type == TT_RPAREN and self.tokens[i + 1].type == TT_EQUAL:
+                return True
+        return False
     
     def makeAssign(self) -> Tuple[Node, Optional[Error]]:
         startPos = self.token.startPos

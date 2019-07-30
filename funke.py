@@ -14,7 +14,7 @@ def main():
             print("File not found")
     else:
         print("No file specified, using test code")
-        _, err = language.run("add(a, b) = +(a, b)\n$(add(3, 4))")
+        _, err = language.run("add(a, b) = +(a, b)\nprint(n) = $(n)\nprint(add(3, 4))")
         if err:
             print(err)
 
