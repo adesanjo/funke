@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import Tuple, Optional, NoReturn, Dict
 
 from languageParser import Node, ProgramNode, AssignNode, VarAssignNode, VarAccessNode, IntNode, FloatNode, StringNode, InputNode, PrintNode, PlusNode, MinusNode, MulNode, DivNode, ModNode, EqualNode, LessThanNode, GreaterThanNode, NotEqualNode, CallNode, RandNode
-from values import Value
+from values import Value, IntValue, FloatValue, StringValue
 from error import Error
 
 RuntimeResult = Tuple[Optional[Value], Optional[Error]]
@@ -56,13 +56,13 @@ class Interpreter:
         return None, None
     
     def visitIntNode(self, node: IntNode, context: Context) -> RuntimeResult:
-        return None, None
+        return IntValue(node.value, node.startPos, node.endPos), None
     
     def visitFloatNode(self, node: FloatNode, context: Context) -> RuntimeResult:
-        return None, None
+        return FloatValue(node.value, node.startPos, node.endPos), None
     
     def visitStringNode(self, node: StringNode, context: Context) -> RuntimeResult:
-        return None, None
+        return StringValue(node.value, node.startPos, node.endPos), None
     
     def visitInputNode(self, node: InputNode, context: Context) -> RuntimeResult:
         return None, None
