@@ -127,7 +127,8 @@ class Interpreter:
         right, err = self.visit(node.rightNode, context)
         if err:
             return None, err
-        assert(left is not None and right is not None)
+        assert(left is not None)
+        assert(right is not None)
         res, err = left.mul(right)
         return res, err
     
