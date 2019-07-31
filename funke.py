@@ -4,6 +4,7 @@ import sys
 import language
 
 def main():
+    sys.setrecursionlimit(2**15)
     if len(sys.argv) > 1:
         if os.path.isfile(sys.argv[1]):
             with open(sys.argv[1]) as f:

@@ -58,6 +58,9 @@ class Value:
         return None, RTError(self.startPos, self.endPos, f"Call not implemented for {self}")
     
     def __repr__(self) -> str:
+        return repr(self.value)
+    
+    def __str__(self) -> str:
         return str(self.value)
 
 class IntValue(Value):
@@ -140,7 +143,9 @@ class FunctionValue(Value):
         assert(isinstance(self.value, list) and len(self.value) > 0 and isinstance(self.value[0], Node))
         res = None
         for node in self.value:
-            res, err = interpreter.visit(node, context)
+            result, err = interpreter.visit(node, context)
             if err:
                 return None, err
+            if result is not None:
+                res = result
         return res, None

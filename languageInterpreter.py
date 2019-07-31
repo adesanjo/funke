@@ -166,6 +166,8 @@ class Interpreter:
         if left.eq(right):
             for inst in node.exprNodes:
                 res, err = self.visit(inst, context)
+                if err:
+                    return None, err
         return res, None
     
     def visitLessThanNode(self, node: LessThanNode, context: Context) -> RuntimeResult:
@@ -180,6 +182,8 @@ class Interpreter:
         if left.lt(right):
             for inst in node.exprNodes:
                 res, err = self.visit(inst, context)
+                if err:
+                    return None, err
         return res, None
     
     def visitGreaterThanNode(self, node: GreaterThanNode, context: Context) -> RuntimeResult:
@@ -194,6 +198,8 @@ class Interpreter:
         if left.gt(right):
             for inst in node.exprNodes:
                 res, err = self.visit(inst, context)
+                if err:
+                    return None, err
         return res, None
     
     def visitNotEqualNode(self, node: NotEqualNode, context: Context) -> RuntimeResult:
@@ -208,6 +214,8 @@ class Interpreter:
         if left.ne(right):
             for inst in node.exprNodes:
                 res, err = self.visit(inst, context)
+                if err:
+                    return None, err
         return res, None
     
     def visitCallNode(self, node: CallNode, context: Context) -> RuntimeResult:

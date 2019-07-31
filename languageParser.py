@@ -71,7 +71,7 @@ class StringNode(Node):
         self.value: str = value
     
     def __repr__(self) -> str:
-        return f"StringNode [{self.value}]"
+        return f"StringNode [{repr(self.value)}]"
 
 class InputNode(Node):
     def __init__(self, startPos: Position, endPos: Position):
@@ -277,12 +277,13 @@ class Parser:
         expr, err = self.makeExpr()
         if err:
             return [], err
+        exprs.append(expr)
         while self.token.type == TT_COMMA:
             self.advance()
             expr, err = self.makeExpr()
             if err:
                 return [], err
-        exprs.append(expr)
+            exprs.append(expr)
         return exprs, None
     
     def makeExpr(self) -> ParseResult:
